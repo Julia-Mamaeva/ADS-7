@@ -1,100 +1,79 @@
 // Copyright 2021 NNTU-CS
 #include "train.h"
 
-#define INIT_COUNT 0
-#define NULL_PTR 0
+const int ZERO_INIT = 0;
+const int UNIT_VALUE = 1;
+const int DOUBLE_STEP = 2;
 
-Train::Train() noexcept {
-    this->first = NULL_PTR;
-    this->countOp = INIT_COUNT;
+Train::Train() {
+    first = nullptr;
+    countOp = ZERO_INIT;
 }
 
-void Train::addCar(bool light) {
-    Car* new_node = new Car{light, nullptr, nullptr};
-    
-    if (!first) {
-        new_node->next = new_node->prev = new_node;
+void Train::addCar(bool bulb_state) {
+    Car* new_node = new Car();
+    new_node->light = bulb_state;
+    new_node->next = new_node;
+    new_node->prev = new_node;
+
+    if (first != nullptr) {
+        new_node->next = first;
+        new_node->prev = first->prev;
+        first->prev->next = new_node;
+        first->prev = new_node;
+    } else {
         first = new_node;
-        return;
     }
-    
-    new_node->prev = first->prev;
-    new_node->next = first;
-    first->prev->next = new_node;
-    first->prev = new_node;
 }
 
-namespace {
-    constexpr int SINGLE_UNIT = 1;
-    constexpr int COUNT_STEP = 2;
+static int processUnits(Car* start, int& counter) {
+    Car* current = start->next;
+    int units = UNIT_VALUE;
+    counter += UNIT_VALUE;
+
+    while (current->light == false) {
+        current = current->next;
+        counter += DOUBLE_STEP;
+        units++;
+    }
+    current->light = false;
+    counter++;
+    return units;
 }
 
 int Train::getLength() {
-    if (this->first == NULL_PTR) return INIT_COUNT;
-    if (this->first->next == this->first) return SINGLE_UNIT;
+    if (first == nullptr) return ZERO_INIT;
+    if (first->next == first) return UNIT_VALUE;
 
-    this->countOp = SINGLE_UNIT;
-    Car* current_unit = this->first;
-    int units_found = SINGLE_UNIT;
+    countOp = UNIT_VALUE;
+    first->light = true;
+    countOp++;
 
-    if (current_unit->light == false) {
-        current_unit->light = true;
-        this->countOp++;
+    int result = processUnits(first, countOp);
+    if (first->light == false) return result;
+
+    while (true) {
+        countOp++;
+        first->light = true;
+        countOp++;
+        result = processUnits(first, countOp);
+        if (first->light == false) break;
     }
-
-    current_unit = current_unit->next;
-    this->countOp++;
-
-    auto process_units = [&]() {
-        while (current_unit->light == false) {
-            current_unit = current_unit->next;
-            this->countOp += COUNT_STEP;
-            units_found++;
-        }
-        current_unit->light = false;
-        this->countOp++;
-    };
-
-    process_units();
-
-    if (this->first->light == false) {
-        return units_found;
-    }
-
-    for (;;) {
-        current_unit = this->first;
-        units_found = SINGLE_UNIT;
-        this->countOp++;
-
-        if (current_unit->light == false) {
-            current_unit->light = true;
-            this->countOp++;
-        }
-
-        current_unit = current_unit->next;
-        this->countOp++;
-
-        process_units();
-
-        if (this->first->light == false) {
-            return units_found;
-        }
-    }
+    return result;
 }
 
-int Train::getOpCount() const noexcept {
-    return this->countOp;
+int Train::getOpCount() {
+    return countOp;
 }
 
 Train::~Train() {
-    if (this->first == NULL_PTR) return;
+    if (first == nullptr) return;
 
-    Car* unit_to_delete = this->first->next;
-    while (unit_to_delete != this->first) {
-        Car* next_unit = unit_to_delete->next;
-        delete unit_to_delete;
-        unit_to_delete = next_unit;
+    Car* current = first->next;
+    while (current != first) {
+        Car* next = current->next;
+        delete current;
+        current = next;
     }
-    delete this->first;
-    this->first = NULL_PTR;
+    delete first;
 }
