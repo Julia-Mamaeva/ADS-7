@@ -1,68 +1,67 @@
 // Copyright 2021 NNTU-CS
 #include "train.h"
 
-Train::Train() : operationsCounter(0), entryCar(nullptr) {}
+Train::Train() : countOp(0), first(nullptr) {}
 
 Train::~Train() {
-    if (entryCar) {
-        Car* currentCar = entryCar->nextCar;
-        while (currentCar != entryCar) {
-            Car* tempCar = currentCar;
-            currentCar = currentCar->nextCar;
-            delete tempCar;
+    if (first) {
+        Car* current = first->next;
+        while (current != first) {
+            Car* temp = current;
+            current = current->next;
+            delete temp;
         }
-        delete entryCar;
+        delete first;
     }
 }
 
-void Train::addCar(bool bulbState) {
-    Car* newCar = new Car{bulbState, nullptr, nullptr};
-    if (!entryCar) {
-        entryCar = newCar;
-        newCar->nextCar = newCar;
-        newCar->prevCar = newCar;
+void Train::addCar(bool light) {
+    Car* newCar = new Car{light, nullptr, nullptr};
+    if (!first) {
+        first = newCar;
+        newCar->next = newCar;
+        newCar->prev = newCar;
     } else {
-        Car* lastCar = entryCar->prevCar;
-        lastCar->nextCar = newCar;
-        newCar->prevCar = lastCar;
-        newCar->nextCar = entryCar;
-        entryCar->prevCar = newCar;
+        Car* last = first->prev;
+        last->next = newCar;
+        newCar->prev = last;
+        newCar->next = first;
+        first->prev = newCar;
     }
 }
 
 int Train::getLength() {
-    operationsCounter = 0;
-    if (!entryCar) return 0;
+    countOp = 0;
+    if (!first) return 0;
 
-    Car* currentPosition = entryCar;
-    if (!currentPosition->bulbState) {
-        currentPosition->bulbState = true;
+    Car* current = first;
+    if (!current->light) {
+        current->light = true;
     }
 
-    int totalCars = 1;
-    bool moveForward = true;
+    int length = 1;
+    bool direction = true;
 
     while (true) {
-        Car* nextPosition = moveForward ? 
-            currentPosition->nextCar : currentPosition->prevCar;
-        operationsCounter++;
+        Car* next = direction ? current->next : current->prev;
+        countOp++;
 
-        if (nextPosition->bulbState) {
-            nextPosition->bulbState = false;
-            totalCars++;
-            currentPosition = nextPosition;
+        if (next->light) {
+            next->light = false;
+            length++;
+            current = next;
         } else {
-            moveForward = !moveForward;
+            direction = !direction;
         }
 
-        if (nextPosition == entryCar) {
-            if (!entryCar->bulbState) {
-                return totalCars;
+        if (next == first) {
+            if (!first->light) {
+                return length;
             }
         }
     }
 }
 
-int Train::getOpCount() const {
-    return operationsCounter;
+int Train::getOpCount() {
+    return countOp;
 }
