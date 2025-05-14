@@ -1,67 +1,96 @@
 // Copyright 2021 NNTU-CS
 #include "train.h"
 
-Train::Train() : countOp(0), first(nullptr) {}
-
-Train::~Train() {
-    if (first) {
-        Car* current = first->next;
-        while (current != first) {
-            Car* temp = current;
-            current = current->next;
-            delete temp;
-        }
-        delete first;
-    }
-}
-
-void Train::addCar(bool light) {
-    Car* newCar = new Car{light, nullptr, nullptr};
-    if (!first) {
-        first = newCar;
-        newCar->next = newCar;
-        newCar->prev = newCar;
-    } else {
-        Car* last = first->prev;
-        last->next = newCar;
-        newCar->prev = last;
-        newCar->next = first;
-        first->prev = newCar;
-    }
-}
-
-int Train::getLength() {
+Train::Train() {
     countOp = 0;
-    if (!first) return 0;
+    first = 0;
+}
 
-    Car* current = first;
-    if (!current->light) {
-        current->light = true;
+void Train::insertCarriage(bool lightState) {
+    Car* carriage = new Car();
+    carriage->light = lightState;
+    carriage->next = carriage->prev = carriage;
+
+    if (first) {
+        carriage->next = first;
+        carriage->prev = first->prev;
+        first->prev->next = carriage;
+        first->prev = carriage;
+    } else {
+        first = carriage;
+    }
+}
+
+int Train::calculateSize() {
+    if (!first) return 0;
+    if (first->next == first) return 1;
+
+    countOp = 1;
+    Car* ptr = first;
+    int result = 1;
+
+    if (!ptr->light) {
+        ptr->light = 1;
+        countOp++;
     }
 
-    int length = 1;
-    bool direction = true;
+    ptr = ptr->next;
+    countOp++;
 
-    while (true) {
-        Car* next = direction ? current->next : current->prev;
+    while (!ptr->light) {
+        ptr = ptr->next;
+        countOp += 2;
+        result++;
+    }
+
+    ptr->light = 0;
+    countOp++;
+
+    if (!first->light) {
+        return result;
+    }
+
+    while (1) {
+        ptr = first;
+        result = 1;
         countOp++;
 
-        if (next->light) {
-            next->light = false;
-            length++;
-            current = next;
-        } else {
-            direction = !direction;
+        if (!ptr->light) {
+            ptr->light = 1;
+            countOp++;
         }
 
-        if (next == first) {
-            if (!first->light) {
-                return length;
-            }
+        ptr = ptr->next;
+        countOp++;
+
+        while (!ptr->light) {
+            ptr = ptr->next;
+            countOp += 2;
+            result++;
+        }
+
+        ptr->light = 0;
+        countOp++;
+
+        if (!first->light) {
+            return result;
         }
     }
 }
 
-int Train::getOpCount() {
+int Train::operationsCount() {
     return countOp;
+}
+
+Train::~Train() {
+    if (!first) return;
+
+    Car* current = first->next;
+    while (current != first) {
+        Car* temporary = current;
+        current = current->next;
+        delete temporary;
+    }
+    delete first;
+    first = 0;
 }
